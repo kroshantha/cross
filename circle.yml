@@ -1,12 +1,33 @@
-machine:
-  services:
-    - docker
-  environment:
-    toolset_branch: master
-    server_type: circle
-    used_modules: check_cache,code_style_check,unit_tests
-    remote_shell_script: 'https://raw.githubusercontent.com/shadow-robot/sr-build-tools/$toolset_branch/bin/sr-run-ci-build.sh'
 
+machine:
+ pre:
+  - wget https://github.com/alexec/circleci/archive/1.0.6.tar.gz
+  - tar -xvf 1.0.6.tar.gz
+  - ./circleci-1.0.6/install.sh $CIRCLE_PROJECT_REPONAME
+  - $CIRCLE_PROJECT_REPONAME/circle.sh pre_machine
+ post:
+  - $CIRCLE_PROJECT_REPONAME/circle.sh post_machine
+ services:
+  - docker
+ environment:
+  DOCKER_HOST: tcp://127.0.0.1:2376
+  DOCKER_CERT_PATH: $HOME/.docker
+  DOCKER_TLS_VERIFY: 1
+dependencies:
+ override: 
+  - mvn dependency:resolve -s settings.xml
 test:
-  override:
-    - curl -s "$( echo "$remote_shell_script" | sed 's/#/%23/g' )" | bash /dev/stdin "$toolset_branch" $server_type $used_modules
+ override:
+  - sudo service mysql stop
+  - mvn deploy -Prun-its -s settings.xml
+  - cat target/it/port-setup-it/docker.ps
+ post:
+  - mkdir -p $CIRCLE_TEST_REPORTS/junit/
+  - find . -type f -regex ".*/target/.*-reports/.*xml" -exec cp {} $CIRCLE_TEST_REPORTS/junit/ \;
+deployment:
+ staging:
+   branch: master
+   commands:
+    - ./circle.sh start_build drop-wizard-in-a-box
+    - ./circle.sh start_build search-in-a-box
+    - ./circle.sh start_build selenium-visual-testing
