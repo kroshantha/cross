@@ -2,19 +2,14 @@ machine:
   ruby:
     version: rbx-2.2.3
     
-dependencies:
-    override:
-        - PATH="/home/ubuntu/.rvm/rubies/ruby-2.2.3/bin/:$PATH" /home/ubuntu/.rvm/gems/ruby-2.2.3@global/bin/bundle install
 
 general:
    artifacts:
      - $CIRCLE_TEST_REPORTS
-     - target
+ 
      
 test:
   override:
-    - PATH="/home/ubuntu/.rvm/rubies/ruby-2.2.3/bin/:$PATH" /home/ubuntu/.rvm/gems/ruby-2.2.3@global/bin/bundle exec jekyll build
-    - PATH="/home/ubuntu/.rvm/rubies/ruby-2.2.3/bin/:$PATH" /home/ubuntu/.rvm/gems/ruby-2.2.3@global/bin/bundle exec htmlproof ./_source
     - mvn clean install
   post:
     - mkdir -p $CIRCLE_TEST_REPORTS/junit/
